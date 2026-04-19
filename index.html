@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Prompter | Free Online Teleprompter with PiP</title>
+    <meta name="description" content="A free, browser-based, zero-dependency teleprompter tool for Zoom, Meet, and streaming. Features Picture-in-Picture (PiP) support and rich text formatting.">
+    <meta name="keywords" content="teleprompter, online prompter, browser teleprompter, free prompter, picture-in-picture prompter, zoom teleprompter, meet prompter">
+    <meta name="author" content="Özgür Kurul">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ozgurkurul.github.io/prompter/">
+    <meta property="og:title" content="Prompter | Free Online Teleprompter">
+    <meta property="og:description" content="A fast, browser-based teleprompter that stays on top of your video calls with Picture-in-Picture mode. No installation required.">
+    <meta property="og:image" content="https://ozgurkurul.github.io/prompter/prompter-og.jpg">
+
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="prompter.css">
+    <style></style>
+</head>
+<body>
+
+    <div id="controls">
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <button id="startBtn" >▶ Start</button>
+                <button id="stepBackBtn" class="secondary" title="Step back (←)">◀ Back</button>
+                <button id="stepForwardBtn" class="secondary" title="Step forward (→)">Forward ▶</button>
+                <button id="resetBtn" class="secondary">↺ Reset</button>
+                <button id="fullscreenBtn" class="secondary">⛶ Fullscreen</button>
+                <button id="undockBtn" class="secondary" title="Open in separate window (U)">⧉ Undock</button>
+                <div class="control-group">
+                    <label for="speed">Speed:</label>
+                    <input type="range" id="speed" min="0.4" max="8" step="0.1" value="1">
+                    <span class="value" id="speedValue">1</span>
+                </div>
+                <div class="control-group">
+                    <label for="fontSize">Font:</label>
+                    <input type="range" id="fontSize" min="20" max="200" step="2" value="52">
+                    <span class="value" id="fontValue">52</span>
+                </div>
+            </div>
+
+            <div class="top-bar-right">
+                <div id="stats" class="stats-box" title="Estimated scroll duration based on current speed, font size and text length">
+                    <span id="wordCount">0</span>&nbsp;words &nbsp;·&nbsp;
+                    <span id="duration">0:00</span>
+                </div>
+                <div id="timer" class="stats-box" title="Elapsed time (counts during playback)">
+                    ⏱&nbsp;<span id="timerValue">0:00</span>
+                </div>
+                <button id="helpBtn" class="secondary" title="Help (?)">? Help</button>
+                <button id="toggleControlsBtn" title="Hide/show panel (H)">▲ Hide</button>
+                <button id="templatesBtn" class="secondary" title="Profiles & Contents panel (C / P)">&#9776; Profiles & Contents</button>
+            </div>
+        </div>
+
+        <div class="controls-row input-row">
+            <input type="text" id="titleInput" placeholder="Title (shown top-right on screen)">
+            <button id="newContentBtn" class="secondary" title="Create a new empty content">+ New Empty</button>
+        </div>
+
+        <div class="controls-row">
+            <textarea id="inputText" placeholder="Paste your text here...  •  **bold**  •  {red:colored}  •  {#ffcc00:highlighted}"></textarea>
+        </div>
+    </div>
+
+    <div id="prompter-container">
+        <div id="reading-line"></div>
+        <div id="prompter-text"></div>
+        <div id="completion-banner">✓ Completed</div>
+        <div id="status"></div>
+        <div id="activeTemplateIndicator"></div>
+        <div id="help">
+            <kbd>Space</kbd> Start/Stop &nbsp;
+            <kbd>←</kbd>/<kbd>→</kbd> Step &nbsp;
+            <kbd>↑</kbd>/<kbd>↓</kbd> Speed &nbsp;
+            <kbd>+</kbd>/<kbd>-</kbd> Font &nbsp;
+            <kbd>Ctrl</kbd>+<kbd>←</kbd>/<kbd>→</kbd> Prev/Next &nbsp;
+            <kbd>R</kbd> Reset &nbsp;
+            <kbd>F</kbd> Fullscreen &nbsp;
+            <kbd>H</kbd> Hide/Show &nbsp;
+            <kbd>U</kbd> Undock &nbsp;
+            <kbd>?</kbd> Help &nbsp;
+            <kbd>C</kbd>/<kbd>P</kbd> Profiles &amp; Contents
+        </div>
+    </div>
+
+    <!-- Templates side panel -->
+    <div id="templatesPanel">
+        <div class="tp-header">
+            <h3>📁 Profiles &amp; 📋 Contents</h3>
+            <button class="tp-close" id="templatesCloseBtn" title="Close">×</button>
+        </div>
+        <div class="tp-profile-bar">
+            <select id="profileSelect" title="Switch profile"></select>
+            <div class="tp-profile-btns">
+                <button id="newProfileBtn" class="tp-pb" title="New profile">+</button>
+                <button id="renameProfileBtn" class="tp-pb" title="Rename active profile">✎</button>
+                <button id="deleteProfileBtn" class="tp-pb tp-pb-del" title="Delete active profile">🗑</button>
+            </div>
+        </div>
+        <div class="tp-actions">
+            <button id="newTemplateBtn" class="secondary">+ New Empty</button>
+        </div>
+        <div class="tp-actions tp-io">
+            <button id="exportTemplatesBtn" class="secondary" title="Download all contents as JSON">⬇ Export</button>
+            <button id="importTemplatesBtn" class="secondary" title="Load contents from JSON">⬆ Import</button>
+            <input type="file" id="importTemplatesInput" accept="application/json,.json" style="display:none">
+        </div>
+        <div id="templatesList"></div>
+    </div>
+    
+    <!-- Help modal -->
+    <div id="helpModal" class="modal-overlay" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+            <div class="modal-header">
+                <h3 id="helpModalTitle">❔ How to use Prompter</h3>
+                <button class="modal-close" id="helpCloseBtn" title="Close (Esc)">×</button>
+            </div>
+            <div class="modal-body">
+                <section>
+                    <h4>Basics</h4>
+                    <ul>
+                        <li>Paste your text into the input box and press <kbd>Space</kbd> (or click <b>Start</b>) to begin scrolling.</li>
+                        <li>Use the <b>Speed</b> and <b>Font</b> sliders to adjust playback. They are remembered across sessions.</li>
+                        <li>Click <b>Save &amp; Load</b> to store the current text into the active content and push it to the prompter.</li>
+                        <li>Click <b>⧉ Undock</b> to open the prompter in a separate Picture-in-Picture window.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4>Text formatting</h4>
+                    <p>You can mark up parts of your text directly inside the input:</p>
+                    <ul>
+                        <li><code>**bold text**</code> → <b>bold text</b></li>
+                        <li><code>{red:important}</code> → <span style="color:red">important</span></li>
+                        <li><code>{yellow:warning}</code> → <span style="color:yellow">warning</span></li>
+                        <li><code>{#4ec9b0:accent}</code> → <span style="color:#4ec9b0">accent</span> (any hex color works)</li>
+                    </ul>
+                    <p class="muted">Example:<br>
+                        <code>Today we'll focus on **AI safety** and {#ffcc00:alignment}.</code>
+                    </p>
+                </section>
+
+                <section>
+                    <h4>Profiles &amp; Contents</h4>
+                    <ul>
+                        <li>Open the side panel with <kbd>C</kbd> or <kbd>P</kbd>, or click the <b>☰ Profiles &amp; Contents</b> button.</li>
+                        <li><b>Profiles</b> group related contents (e.g. different talks, meetings). Create/rename/delete them from the dropdown bar.</li>
+                        <li><b>Contents</b> are individual scripts inside the active profile. Drag to reorder, click to load.</li>
+                        <li><kbd>Ctrl</kbd>+<kbd>←</kbd> / <kbd>Ctrl</kbd>+<kbd>→</kbd> cycle through contents within the active profile.</li>
+                        <li>Use <b>⬇ Export</b> / <b>⬆ Import</b> to back up or transfer all contents as JSON.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4>Keyboard shortcuts</h4>
+                    <table class="shortcut-table">
+                        <tr><td><kbd>Space</kbd></td><td>Start / Stop</td></tr>
+                        <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Step back / forward</td></tr>
+                        <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Speed down / up</td></tr>
+                        <tr><td><kbd>+</kbd> / <kbd>-</kbd></td><td>Font size up / down</td></tr>
+                        <tr><td><kbd>R</kbd></td><td>Reset to start</td></tr>
+                        <tr><td><kbd>F</kbd></td><td>Fullscreen</td></tr>
+                        <tr><td><kbd>H</kbd></td><td>Hide / show control panel</td></tr>
+                        <tr><td><kbd>U</kbd></td><td>Undock into separate window</td></tr>
+                        <tr><td><kbd>L</kbd></td><td>Load current text into prompter</td></tr>
+                        <tr><td><kbd>C</kbd> / <kbd>P</kbd></td><td>Toggle Profiles &amp; Contents panel</td></tr>
+                        <tr><td><kbd>Ctrl</kbd>+<kbd>←</kbd> / <kbd>→</kbd></td><td>Previous / next content</td></tr>
+                        <tr><td><kbd>?</kbd></td><td>Open this help window</td></tr>
+                        <tr><td><kbd>Esc</kbd></td><td>Close this window</td></tr>
+                    </table>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic prompt modal -->
+    <div id="promptModal" class="modal-overlay" hidden>
+        <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
+            <div class="modal-header">
+                <h3 id="promptModalTitle">Prompt</h3>
+                <button class="modal-close" id="promptModalCloseBtn" title="Close (Esc)">×</button>
+            </div>
+            <div class="modal-body">
+                <label id="promptModalLabel" for="promptModalInput" class="prompt-label"></label>
+                <input type="text" id="promptModalInput" class="prompt-input" />
+            </div>
+            <div class="modal-footer">
+                <button id="promptModalCancelBtn" class="secondary">Cancel</button>
+                <button id="promptModalOkBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="prompter.js"></script>
+</body>
+</html>

@@ -1,0 +1,617 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#controls {
+    background-color: #1e1e1e;
+    padding: 10px 12px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+    max-height: 500px;
+    overflow: hidden;
+}
+
+.controls-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+/* Input group görünümü: başlık + butonlar yan yana */
+.input-row {
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+.input-row #newContentBtn {
+    flex-shrink: 0;
+    background-color: #238636;
+}
+.input-row #newContentBtn:hover {
+    background-color: #2ea043;
+}
+
+.stats-box {
+    display: flex;
+    align-items: center;
+    background: #2a2a2a;
+    padding: 0 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #ccc;
+    white-space: nowrap;
+    flex-shrink: 0;
+    height: 26px;
+}
+.stats-box span { color: #4ec9b0; font-variant-numeric: tabular-nums; }
+
+/* Collapsed (gizli) durum — sadece bottom-bar (stats + toggle) görünür */
+#controls.collapsed .controls-row {
+    display: none !important;
+}
+#controls.collapsed {
+    padding: 10px 12px;
+    background: rgba(30,30,30,0.6);
+    border-bottom: none;
+}
+
+#toggleControlsBtn {
+    background-color: #444;
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.top-bar-left,
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.top-bar-right {
+    justify-content: flex-end;
+}
+.top-bar button {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+#toggleControlsBtn:hover { background-color: #666; }
+
+textarea {
+    flex-grow: 1;
+    min-width: 200px;
+    height: 80px;
+    background: #2d2d2d;
+    color: white;
+    border: 1px solid #444;
+    padding: 8px;
+    border-radius: 4px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+button {
+    background-color: #1f6feb;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.05s;
+    white-space: nowrap;
+}
+
+button:hover { background-color: #388bfd; }
+button:active { transform: translateY(1px); }
+button.stop { background-color: #d13438; }
+button.stop:hover { background-color: #a80000; }
+button.secondary { background-color: #444; }
+button.secondary:hover { background-color: #666; }
+button.undock { background-color: #e2991b; }
+button.undock:hover { background-color: #f09800; }
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    font-size: 13px;
+    background: #2a2a2a;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.control-group input[type="range"] {
+    width: 110px;
+}
+
+.control-group .value {
+    min-width: 32px;
+    text-align: right;
+    color: #4ec9b0;
+    font-variant-numeric: tabular-nums;
+}
+
+#prompter-container {
+    flex-grow: 1;
+    position: relative;
+    overflow: hidden;
+    padding: 0 50px;
+}
+
+/* Okuma çizgisi - ekranın üst 1/3'üne odak göstergesi */
+#reading-line {
+    position: absolute;
+    top: 33%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,200,0,0.4), transparent);
+    pointer-events: none;
+    z-index: 5;
+}
+
+#prompter-text {
+    position: absolute;
+    left: 50px;
+    right: 50px;
+    font-size: 52px;
+    line-height: 1.6;
+    text-align: center;
+    white-space: pre-wrap;
+}
+
+/* Welcome ekranı - hiç içerik yokken */
+.welcome {
+    font-size: 22px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.65);
+    padding: 22vh 10vw 0;
+    text-align: center;
+    white-space: normal;
+}
+.welcome h1 {
+    font-size: 42px;
+    font-weight: 600;
+    margin: 0 0 18px;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+.welcome p { margin: 8px 0; }
+.welcome .welcome-hint {
+    margin-top: 20px;
+    font-size: 17px;
+    color: rgba(255,255,255,0.5);
+}
+.welcome kbd {
+    background: rgba(35,134,54,0.25);
+    border: 1px solid #2ea043;
+    border-radius: 3px;
+    padding: 2px 8px;
+    font-family: monospace;
+    color: #7ee787;
+    font-size: 15px;
+}
+
+#titleInput {
+    width: 100%;
+    background: #2d2d2d;
+    color: white;
+    border: 1px solid #444;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+/* ---- Templates panel ---- */
+#templatesPanel {
+    position: fixed;
+    top: 0;
+    right: -360px;
+    width: 340px;
+    height: 100vh;
+    background: #1a1a1a;
+    border-left: 1px solid #333;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+    z-index: 100;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+#templatesPanel.open { right: 0; }
+
+#templatesPanel .tp-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #222;
+}
+#templatesPanel .tp-header h3 {
+    margin: 0;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+#templatesPanel .tp-close {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 6px;
+}
+#templatesPanel .tp-close:hover { color: #fff; }
+
+/* Profil barı: header altında profil seçici ve yönetim butonları */
+.tp-profile-bar {
+    padding: 10px 12px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    background: #1f1f1f;
+}
+.tp-profile-bar select {
+    flex: 1;
+    background: #2d2d2d;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    min-width: 0;
+    cursor: pointer;
+}
+.tp-profile-bar .tp-profile-btns {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.tp-profile-bar .tp-pb {
+    background: #3a3a3a;
+    border: none;
+    color: #ccc;
+    border-radius: 3px;
+    padding: 6px 9px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+}
+.tp-profile-bar .tp-pb:hover { background: #555; color: #fff; }
+.tp-profile-bar .tp-pb-del:hover { background: #a33; color: #fff; }
+
+#templatesPanel .tp-actions {
+    padding: 10px 12px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    gap: 8px;
+}
+#templatesPanel .tp-actions button {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 12px;
+}
+#templatesPanel .tp-io {
+    border-top: 1px dashed #2a2a2a;
+    padding-bottom: 10px;
+    padding-right: 10px;
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+}
+
+#templatesList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+.tp-item {
+    background: #262626;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s, border-color 0.15s;
+}
+.tp-item:hover { background: #2e2e2e; }
+.tp-item.active {
+    border-color: #1f6feb;
+    background: #172b4d;
+}
+.tp-item.dragging { opacity: 0.4; }
+.tp-item.drag-over { border-color: #4ec9b0; }
+.tp-item .tp-handle {
+    color: #666;
+    font-size: 14px;
+    cursor: grab;
+    user-select: none;
+}
+.tp-item .tp-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.tp-item .tp-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tp-item .tp-title .tp-index {
+    color: #4ec9b0;
+    font-weight: bold;
+    margin-right: 2px;
+}
+.tp-item .tp-snippet {
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+.tp-item .tp-btns {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.tp-item .tp-btns button {
+    background: #3a3a3a;
+    border: none;
+    color: #ccc;
+    border-radius: 3px;
+    padding: 4px 7px;
+    cursor: pointer;
+    font-size: 11px;
+}
+.tp-item .tp-btns button:hover { background: #555; color: #fff; }
+.tp-item .tp-btns .tp-del:hover { background: #a33; color: #fff; }
+.tp-empty {
+    text-align: center;
+    color: #666;
+    padding: 30px 20px;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* Aktif profil + şablon göstergesi — prompter alanının sağ üst köşesinde */
+#activeTemplateIndicator {
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    right: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    text-align: right;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    z-index: 4;
+}
+
+#completion-banner {
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: #4ec9b0;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(78,201,176,0.5);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 6;
+}
+#completion-banner.show { opacity: 1; }
+
+#help {
+    position: absolute;
+    bottom: 6px;
+    right: 12px;
+    font-size: 12px;
+    color: #888;
+    background: rgba(0,0,0,0.1);
+    padding: 6px 10px;
+    border-radius: 4px;
+    pointer-events: none;
+    line-height: 1.6;
+}
+#help kbd {
+    background: rgba(51, 51, 51, 0.2);
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-family: monospace;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+#status {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.6);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+#status.show { opacity: 1; }
+#status.playing { color: #4ec9b0; }
+#status.paused { color: #ffcc00; }
+
+/* ---- Help modal ---- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(3px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.modal-overlay[hidden] { display: none; }
+.modal {
+    background: #1e1e1e;
+    color: #eee;
+    border: 1px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    width: min(720px, 100%);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #333;
+    background: #222;
+}
+.modal-header h3 { margin: 0; font-size: 15px; letter-spacing: 0.3px; }
+.modal-close {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 0 6px;
+    line-height: 1;
+}
+.modal-close:hover { color: #fff; }
+.modal-body {
+    overflow-y: auto;
+    padding: 16px 20px 20px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.modal-body section { margin-bottom: 18px; }
+.modal-body section:last-child { margin-bottom: 0; }
+.modal-body h4 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #4ec9b0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.modal-body ul { margin: 0 0 6px; padding-left: 20px; }
+.modal-body li { margin-bottom: 4px; }
+.modal-body p { margin: 6px 0; }
+.modal-body p.muted { color: #999; font-size: 12px; }
+.modal-body code {
+    background: #2a2a2a;
+    border: 1px solid #333;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    color: #dcdcaa;
+}
+.modal-body kbd {
+    background: rgba(51, 51, 51, 0.6);
+    border: 1px solid #555;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-family: monospace;
+    color: #fff;
+    font-size: 12px;
+}
+.shortcut-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.shortcut-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #2a2a2a;
+    vertical-align: middle;
+}
+.shortcut-table td:first-child {
+    white-space: nowrap;
+    width: 1%;
+    color: #ccc;
+}
+.shortcut-table tr:last-child td { border-bottom: none; }
+
+.modal-sm { width: min(420px, 100%); }
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 18px 16px;
+    border-top: 1px solid #2a2a2a;
+    background: #1b1b1b;
+}
+.modal-footer button { padding: 8px 16px; font-size: 13px; }
+.prompt-label {
+    display: block;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+}
+.prompt-input {
+    width: 100%;
+    background: #2d2d2d;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.prompt-input:focus {
+    border-color: #1f6feb;
+    box-shadow: 0 0 0 2px rgba(31,111,235,0.25);
+}
