@@ -10,6 +10,7 @@
 [![Made with CSS3](https://img.shields.io/badge/made%20with-CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)](#)
 [![Made with JavaScript](https://img.shields.io/badge/made%20with-JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Özgür%20Kurul-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/ozgurkurul/)
+[![Support on Kreosus](https://img.shields.io/badge/support-Kreosus%20☕-ffcc00?style=flat-square)](https://kreosus.com/ozgurkurul/about)
 
 A **free, browser-based teleprompter** for video calls, live streams, and recordings.
 No installation, no sign-up, no server — just open it in your browser and start speaking.
@@ -56,6 +57,14 @@ Made by **Özgür Kurul**
 🔗 [LinkedIn — ozgurkurul](https://www.linkedin.com/in/ozgurkurul/)
 
 Feel free to open an issue, suggest a feature, or fork the project.
+
+---
+
+## ☕ Support
+
+If Prompter makes your life easier, you can buy me a coffee on
+**[Kreosus](https://kreosus.com/ozgurkurul/about)** — every bit of support helps me keep
+this project free and add new features.
 
 ---
 
