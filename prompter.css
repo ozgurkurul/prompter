@@ -693,9 +693,26 @@ button.undock:hover { background-color: #f09800; }
 
 /* Phones */
 @media (max-width: 600px) {
-    body { font-size: 14px; }
+    body {
+        font-size: 14px;
+        /* Controls panel moves to the BOTTOM on phones (thumb reach) */
+        flex-direction: column-reverse;
+    }
 
-    #controls { padding: 6px 8px; gap: 6px; }
+    #controls {
+        padding: 6px 8px;
+        gap: 6px;
+        /* Shadow now points upward since the panel is at the bottom */
+        border-bottom: none;
+        border-top: 1px solid #333;
+        box-shadow: 0 -4px 8px rgba(0,0,0,0.35);
+    }
+
+    /* Keep the top-bar (Start etc.) closest to the prompter,
+       textarea / title input at the bottom of the panel */
+    #controls .top-bar            { order: 1; }
+    #controls .input-row          { order: 2; }
+    #controls .controls-row:not(.input-row) { order: 3; }
 
     /* Keep important actions large, make secondaries wrap comfortably */
     .top-bar-left,
