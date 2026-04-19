@@ -764,7 +764,8 @@ button.undock:hover { background-color: #f09800; }
     #prompter-text {
         left: 12px;
         right: 12px;
-        font-size: 38px !important;  /* cap for small screens */
+        /* mobile default — slider (inline style) still overrides this */
+        font-size: 38px;
     }
     #activeTemplateIndicator {
         font-size: 11px;
@@ -806,7 +807,7 @@ button.undock:hover { background-color: #f09800; }
     .top-bar button { font-size: 11px; padding: 8px 6px; }
     #stepBackBtn, #stepForwardBtn,
     #resetBtn, #fullscreenBtn, #undockBtn { flex: 1 1 45%; }
-    #prompter-text { font-size: 32px !important; }
+    #prompter-text { font-size: 32px; }
 }
 
 /* Fine-tune for touch devices: enlarge drag/tap zones regardless of width */
