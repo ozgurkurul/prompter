@@ -18,7 +18,7 @@
     <meta property="og:image" content="https://ozgurkurul.github.io/prompter/prompter-og.jpg">
 
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1.0.0">
-    <link rel="stylesheet" href="prompter.css?v=1.0.4">
+    <link rel="stylesheet" href="prompter.css?v=1.0.6">
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style></style>
@@ -44,6 +44,8 @@
                     <input type="range" id="fontSize" min="20" max="200" step="2" value="52">
                     <span class="value" id="fontValue">52</span>
                 </div>
+                <button id="remoteBtn" class="secondary" title="Remote control from your phone">📱 Remote</button>                
+                <button id="remoteOpenBtn" title="Open the remote controller page in a new tab">🎮 Control</button>
             </div>
 
             <div class="top-bar-right">
@@ -54,8 +56,6 @@
                 <div id="timer" class="stats-box" title="Elapsed time (counts during playback)">
                     ⏱&nbsp;<span id="timerValue">0:00</span>
                 </div>
-                <button id="remoteBtn" class="secondary" title="Remote control from your phone">📱 Remote</button>                
-                <button id="remoteOpenBtn" class="secondary" title="Open the remote controller page in a new tab">🎮 Open remote</button>
                 <button id="helpBtn" class="secondary" title="Help (?)">? Help</button>
                 <button id="toggleControlsBtn" title="Hide/show panel (H)">▲ Hide</button>
                 <button id="templatesBtn" class="secondary" title="Profiles & Contents panel (C / P)">&#9776; Profiles & Contents</button>
@@ -287,7 +287,7 @@
         </div>
     </div>
 
-    <script src="prompter.js?v=1.0.4"></script>
+    <script src="prompter.js?v=1.0.6"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DQDRYBF9V4"></script>
     <script>

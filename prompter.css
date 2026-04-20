@@ -132,6 +132,17 @@ button.secondary:hover { background-color: #666; }
 button.undock { background-color: #e2991b; }
 button.undock:hover { background-color: #f09800; }
 
+#remoteOpenBtn {
+    background-color: #fff;
+    color: #1f6feb;
+    border: 1px solid #ccc;
+}
+#remoteOpenBtn:hover {
+    background-color: #1f6feb;
+    color: #fff;
+    border-color: #1f6feb;
+}
+
 .control-group {
     display: flex;
     align-items: center;
@@ -688,8 +699,8 @@ body.remote-mode {
 }
 #remoteApp {
     max-width: 480px;
-    margin: 0 auto;
-    padding: 22px 18px 40px;
+    margin: 0 auto 10px auto;
+    padding: 5px 16px 50px;
     color: #eee;
 }
 .remote-app-header h2 {
