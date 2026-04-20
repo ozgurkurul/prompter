@@ -18,8 +18,8 @@
     <meta property="og:image" content="https://ozgurkurul.github.io/prompter/prompter-og.jpg">
 
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1.0.0">
-    
-    <link rel="stylesheet" href="prompter.css?v=1.0.7">
+
+    <link rel="stylesheet" href="prompter.css?v=1.0.8">
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style></style>
@@ -29,24 +29,31 @@
     <div id="controls">
         <div class="top-bar">
             <div class="top-bar-left">
-                <button id="startBtn" >▶ Start</button>
-                <button id="stepBackBtn" class="secondary" title="Step back (←)">◀ Back</button>
-                <button id="stepForwardBtn" class="secondary" title="Step forward (→)">Forward ▶</button>
-                <button id="resetBtn" class="secondary">↺ Reset</button>
-                <button id="fullscreenBtn" class="secondary">⛶ Fullscreen</button>
-                <button id="undockBtn" class="secondary" title="Open in separate window (U)">⧉ Undock</button>
-                <div class="control-group">
-                    <label for="speed">Speed:</label>
-                    <input type="range" id="speed" min="0.4" max="8" step="0.1" value="1">
-                    <span class="value" id="speedValue">1</span>
+                <button id="startBtn">▶ Start</button>
+                <div class="main-menu-wrapper">
+                    <button id="mainMenuBtn" class="secondary" title="Menu" aria-haspopup="true" aria-expanded="false">☰ Menu</button>
+                    <div id="mainMenu" class="main-menu" hidden>
+                        <button id="remoteOpenBtn" class="mm-item" title="Open the remote controller page in a new tab">🎮 Control</button>
+                        <div class="mm-divider"></div>
+                        <button id="stepBackBtn" class="secondary mm-item" title="Step back (←)">◀ Back</button>
+                        <button id="stepForwardBtn" class="secondary mm-item" title="Step forward (→)">Forward ▶</button>
+                        <button id="resetBtn" class="secondary mm-item">↺ Reset</button>
+                        <button id="fullscreenBtn" class="secondary mm-item">⛶ Fullscreen</button>
+                        <button id="undockBtn" class="secondary mm-item" title="Open in separate window (U)">⧉ Undock</button>
+                        <div class="mm-divider"></div>
+                        <div class="control-group mm-item mm-slider">
+                            <label for="speed">Speed:</label>
+                            <input type="range" id="speed" min="0.4" max="8" step="0.1" value="1">
+                            <span class="value" id="speedValue">1</span>
+                        </div>
+                        <div class="control-group mm-item mm-slider">
+                            <label for="fontSize">Font:</label>
+                            <input type="range" id="fontSize" min="20" max="200" step="2" value="52">
+                            <span class="value" id="fontValue">52</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="control-group">
-                    <label for="fontSize">Font:</label>
-                    <input type="range" id="fontSize" min="20" max="200" step="2" value="52">
-                    <span class="value" id="fontValue">52</span>
-                </div>
-                <button id="remoteBtn" class="secondary" title="Remote control from your phone">📱 Remote</button>                
-                <button id="remoteOpenBtn" title="Open the remote controller page in a new tab">🎮 Control</button>
+                <button id="remoteBtn" class="secondary" title="Remote control from your phone">📱 Remote</button>
             </div>
 
             <div class="top-bar-right">
@@ -291,7 +298,7 @@
         </div>
     </div>
 
-    <script src="prompter.js?v=1.0.7"></script>
+    <script src="prompter.js?v=1.0.8"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DQDRYBF9V4"></script>
     <script>

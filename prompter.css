@@ -143,6 +143,54 @@ button.undock:hover { background-color: #f09800; }
     border-color: #1f6feb;
 }
 
+/* ---- Hamburger dropdown menü ---- */
+.main-menu-wrapper {
+    position: relative;
+    display: inline-block;
+}
+.main-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 220px;
+    background: #1f1f1f;
+    border: 1px solid #333;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    padding: 6px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.main-menu[hidden] { display: none; }
+.main-menu .mm-item {
+    width: 100%;
+    text-align: left;
+    justify-content: flex-start;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+.main-menu .mm-slider {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-between;
+}
+.main-menu .mm-slider input[type="range"] {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+}
+.main-menu .mm-divider {
+    height: 1px;
+    background: #333;
+    margin: 4px 0;
+}
+#mainMenuBtn[aria-expanded="true"] {
+    background-color: #1f6feb;
+    color: #fff;
+}
+
 .control-group {
     display: flex;
     align-items: center;

@@ -868,6 +868,53 @@ function toggleTemplatesPanel() {
 
 templatesBtn.addEventListener('click', toggleTemplatesPanel);
 templatesCloseBtn.addEventListener('click', toggleTemplatesPanel);
+
+// ---- Hamburger main-menu ----
+const mainMenuBtn = document.getElementById('mainMenuBtn');
+const mainMenuEl = document.getElementById('mainMenu');
+function positionMainMenu() {
+    const r = mainMenuBtn.getBoundingClientRect();
+    mainMenuEl.style.top = (r.bottom + 6) + 'px';
+    mainMenuEl.style.left = r.left + 'px';
+}
+function openMainMenu() {
+    mainMenuEl.hidden = false;
+    positionMainMenu();
+    mainMenuBtn.setAttribute('aria-expanded', 'true');
+}
+function closeMainMenu() {
+    mainMenuEl.hidden = true;
+    mainMenuBtn.setAttribute('aria-expanded', 'false');
+}
+function toggleMainMenu() {
+    if (mainMenuEl.hidden) openMainMenu(); else closeMainMenu();
+}
+mainMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMainMenu();
+});
+// Menü içindeki butonlara tıklanınca menüyü kapat (slider hariç)
+mainMenuEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (btn) closeMainMenu();
+});
+// Dışarı tıklama ile kapat
+document.addEventListener('click', (e) => {
+    if (mainMenuEl.hidden) return;
+    if (e.target.closest('.main-menu-wrapper')) return;
+    closeMainMenu();
+});
+// Esc ile kapat
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !mainMenuEl.hidden) closeMainMenu();
+});
+// Pencere yeniden boyutlandığında menü açıksa yeniden konumla
+window.addEventListener('resize', () => {
+    if (!mainMenuEl.hidden) positionMainMenu();
+});
+window.addEventListener('scroll', () => {
+    if (!mainMenuEl.hidden) positionMainMenu();
+}, true);
 newTemplateBtn.addEventListener('click', addEmptyTemplate);
 document.getElementById('newContentBtn').addEventListener('click', () => {
     // Aktif içerik zaten boşsa yenisini oluşturma
@@ -1487,6 +1534,25 @@ if (urlIsRemote) {
     let manualDisconnect = false;
     let reconnectTimer = null;
     let reconnectAttempt = 0;
+    let wakeLockSentinel = null;
+
+    async function requestWakeLock() {
+        if (!('wakeLock' in navigator)) return;
+        if (wakeLockSentinel) return;
+        try {
+            wakeLockSentinel = await navigator.wakeLock.request('screen');
+            wakeLockSentinel.addEventListener('release', () => {
+                wakeLockSentinel = null;
+            });
+        } catch (e) {
+            wakeLockSentinel = null;
+        }
+    }
+    async function releaseWakeLock() {
+        if (!wakeLockSentinel) return;
+        try { await wakeLockSentinel.release(); } catch (e) {}
+        wakeLockSentinel = null;
+    }
 
     function setRemoteAppStatus(text, cls = 'muted') {
         remoteAppStatus.textContent = text;
@@ -1529,6 +1595,7 @@ if (urlIsRemote) {
                 setRemoteAppStatus('✓ Connected — code: ' + code.toUpperCase(), 'remote-status connected');
                 remotePairPanel.setAttribute('hidden', '');
                 remoteControlPanel.removeAttribute('hidden');
+                requestWakeLock();
             });
             conn.on('close', () => {
                 remoteConn = null;
@@ -1580,11 +1647,14 @@ if (urlIsRemote) {
 
     // Sayfa görünür olunca (telefon uyandığında) bağlantı kopuksa hemen dene
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && lastCode && !manualDisconnect
-            && (!remoteConn || !remoteConn.open)) {
-            cancelReconnect();
-            reconnectAttempt = Math.max(1, reconnectAttempt);
-            pairWithHost(true);
+        if (document.visibilityState === 'visible') {
+            // Sayfa tekrar görünürse: bağlantı kopmuşsa dene, control aktifse wake lock yenile
+            if (lastCode && !manualDisconnect && (!remoteConn || !remoteConn.open)) {
+                cancelReconnect();
+                reconnectAttempt = Math.max(1, reconnectAttempt);
+                pairWithHost(true);
+            }
+            if (remoteConn && remoteConn.open) requestWakeLock();
         }
     });
     window.addEventListener('online', () => {
@@ -1605,6 +1675,7 @@ if (urlIsRemote) {
         remotePairPanel.removeAttribute('hidden');
         remoteControlPanel.setAttribute('hidden', '');
         setRemoteAppStatus('Disconnected.', 'muted');
+        releaseWakeLock();
     });
 }
 updateStats();
