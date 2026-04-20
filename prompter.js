@@ -1296,6 +1296,7 @@ const remoteCommands = {
     fullscreen:     () => toggleFullscreen(),
     toggleControls: () => toggleControls(),
     load:           () => loadText(),
+    undock:         () => undock(),
 };
 
 // ---- HOST (ana sayfa) ----
@@ -1389,6 +1390,11 @@ function startHostPeer() {
         }
         setRemoteStatus('Connection error: ' + (err && err.type || err), 'error');
     });
+    // Sinyal sunucusuyla bağlantı koparsa PeerJS'e yeniden bağlan
+    hostPeer.on('disconnected', () => {
+        setRemoteStatus('Signaling lost — reconnecting…');
+        try { hostPeer.reconnect(); } catch (e) {}
+    });
 }
 
 function stopHostPeer() {
@@ -1477,39 +1483,77 @@ if (urlIsRemote) {
 
     let remotePeer = null;
     let remoteConn = null;
+    let lastCode = null;
+    let manualDisconnect = false;
+    let reconnectTimer = null;
+    let reconnectAttempt = 0;
 
     function setRemoteAppStatus(text, cls = 'muted') {
         remoteAppStatus.textContent = text;
         remoteAppStatus.className = cls;
     }
 
-    function pairWithHost() {
-        const code = remotePairInput.value.trim().toLowerCase();
+    function scheduleReconnect(reason) {
+        if (manualDisconnect || !lastCode) return;
+        if (reconnectTimer) return;
+        reconnectAttempt++;
+        const delay = Math.min(15000, 1000 * Math.pow(1.6, Math.min(reconnectAttempt, 8)));
+        const secs = Math.round(delay / 1000);
+        setRemoteAppStatus('Disconnected (' + (reason || '…') + '). Reconnecting in ' + secs + 's… (try ' + reconnectAttempt + ')', 'remote-status error');
+        reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            if (manualDisconnect) return;
+            pairWithHost(true);
+        }, delay);
+    }
+
+    function cancelReconnect() {
+        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    }
+
+    function pairWithHost(isRetry) {
+        const code = isRetry ? lastCode : remotePairInput.value.trim().toLowerCase();
         if (!code) { remotePairInput.focus(); return; }
-        setRemoteAppStatus('Connecting…');
+        lastCode = code;
+        if (!isRetry) { manualDisconnect = false; reconnectAttempt = 0; }
+        cancelReconnect();
+        setRemoteAppStatus(isRetry ? ('Reconnecting… (try ' + reconnectAttempt + ')') : 'Connecting…');
         try { if (remotePeer) remotePeer.destroy(); } catch (e) {}
         remotePeer = new Peer();
         remotePeer.on('open', () => {
             const conn = remotePeer.connect(PEER_ID_PREFIX + code, { reliable: true });
             remoteConn = conn;
             conn.on('open', () => {
+                reconnectAttempt = 0;
+                cancelReconnect();
                 setRemoteAppStatus('✓ Connected — code: ' + code.toUpperCase(), 'remote-status connected');
                 remotePairPanel.setAttribute('hidden', '');
                 remoteControlPanel.removeAttribute('hidden');
             });
             conn.on('close', () => {
-                setRemoteAppStatus('Disconnected. Enter the code again.', 'remote-status error');
-                remotePairPanel.removeAttribute('hidden');
-                remoteControlPanel.setAttribute('hidden', '');
+                remoteConn = null;
+                if (manualDisconnect) {
+                    setRemoteAppStatus('Disconnected.', 'muted');
+                    remotePairPanel.removeAttribute('hidden');
+                    remoteControlPanel.setAttribute('hidden', '');
+                } else {
+                    scheduleReconnect('link closed');
+                }
             });
             conn.on('error', (err) => {
                 setRemoteAppStatus('Connection error: ' + (err && err.type || err), 'remote-status error');
             });
         });
+        remotePeer.on('disconnected', () => {
+            if (!manualDisconnect) scheduleReconnect('peer disconnected');
+        });
         remotePeer.on('error', (err) => {
             const type = err && err.type || err;
             if (type === 'peer-unavailable') {
-                setRemoteAppStatus('Code not found — check the prompter screen.', 'remote-status error');
+                setRemoteAppStatus('Code not found — prompter offline. Retrying…', 'remote-status error');
+                scheduleReconnect('offline');
+            } else if (type === 'network' || type === 'disconnected' || type === 'server-error' || type === 'socket-error' || type === 'socket-closed') {
+                scheduleReconnect(type);
             } else {
                 setRemoteAppStatus('Error: ' + type, 'remote-status error');
             }
@@ -1533,10 +1577,28 @@ if (urlIsRemote) {
         remotePairInput.value = urlRemoteCode.toLowerCase();
         pairWithHost();
     }
+
+    // Sayfa görünür olunca (telefon uyandığında) bağlantı kopuksa hemen dene
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && lastCode && !manualDisconnect
+            && (!remoteConn || !remoteConn.open)) {
+            cancelReconnect();
+            reconnectAttempt = Math.max(1, reconnectAttempt);
+            pairWithHost(true);
+        }
+    });
+    window.addEventListener('online', () => {
+        if (lastCode && !manualDisconnect && (!remoteConn || !remoteConn.open)) {
+            cancelReconnect();
+            pairWithHost(true);
+        }
+    });
     remoteControlPanel.querySelectorAll('.rc[data-cmd]').forEach(btn => {
         btn.addEventListener('click', () => sendCmd(btn.dataset.cmd));
     });
     remoteDisconnectBtn.addEventListener('click', () => {
+        manualDisconnect = true;
+        cancelReconnect();
         try { if (remoteConn) remoteConn.close(); } catch (e) {}
         try { if (remotePeer) remotePeer.destroy(); } catch (e) {}
         remotePeer = null; remoteConn = null;
