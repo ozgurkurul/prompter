@@ -1366,6 +1366,10 @@ function startHostPeer() {
         hostConn = conn;
         setRemoteStatus('✓ Remote connected', 'connected');
         updateRemoteBtnState();
+        conn.on('open', () => {
+            closeRemoteModal();
+            showStatus('📱 Remote connected');
+        });
         conn.on('data', (raw) => {
             try {
                 const msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
