@@ -19,6 +19,8 @@
 
     <link rel="icon" type="image/svg+xml" href="favicon.svg?v=1.0.0">
     <link rel="stylesheet" href="prompter.css?v=1.0.3">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style></style>
 </head>
 <body>
@@ -52,6 +54,8 @@
                 <div id="timer" class="stats-box" title="Elapsed time (counts during playback)">
                     ⏱&nbsp;<span id="timerValue">0:00</span>
                 </div>
+                <button id="remoteBtn" class="secondary" title="Remote control from your phone">📱 Remote</button>                
+                <button id="remoteOpenBtn" class="secondary" title="Open the remote controller page in a new tab">🎮 Open remote</button>
                 <button id="helpBtn" class="secondary" title="Help (?)">? Help</button>
                 <button id="toggleControlsBtn" title="Hide/show panel (H)">▲ Hide</button>
                 <button id="templatesBtn" class="secondary" title="Profiles & Contents panel (C / P)">&#9776; Profiles & Contents</button>
@@ -190,6 +194,77 @@
                         <a href="https://www.linkedin.com/in/ozgurkurul/" target="_blank" rel="noopener">Özgür Kurul</a>.
                     </p>
                 </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remote pairing modal (shown on host) -->
+    <div id="remoteModal" class="modal-overlay" hidden>
+        <div class="modal modal-sm" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h3>📱 Remote control</h3>
+                <button class="modal-close" id="remoteCloseBtn" title="Close (Esc)">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="muted" style="margin-top:0">
+                    Open this page on your phone and add <code>?remote</code> to the URL, then enter this code:
+                </p>
+                <div class="remote-code-row">
+                    <div id="remoteCode" class="remote-code">------</div>
+                    <div id="remoteQr" class="remote-qr" title="Scan with your phone camera"></div>
+                </div>
+                <p class="muted" id="remoteUrlHint" style="font-size:11px; word-break:break-all;"></p>
+                <p id="remoteStatus" class="remote-status">Initializing…</p>
+                <p style="text-align: center;"><button id="remoteDoneBtn">Continue</button></p>
+            </div>
+            <div class="modal-footer">
+                <button id="remoteDisconnectRemoteBtn" class="secondary" title="Disconnect the connected remote device">✕ Disconnect</button>
+                <button id="remoteStopBtn" class="secondary" title="Stop hosting — closes the code and all connections">⏻ Stop</button>
+                <button id="remoteRegenBtn" class="secondary">🔄 New code</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remote controller page (only shown when URL has ?remote) -->
+    <div id="remoteApp" hidden>
+        <div class="remote-app-header">
+            <h2>📱 Prompter Remote</h2>
+            <p id="remoteAppStatus" class="muted">Enter the code shown on the prompter screen.</p>
+        </div>
+        <div id="remotePairPanel" class="remote-pair">
+            <input type="text" id="remotePairInput" inputmode="latin" autocomplete="off"
+                   autocapitalize="characters" spellcheck="false"
+                   placeholder="abc123" maxlength="12" class="prompt-input remote-code-input">
+            <button id="remotePairBtn">Connect</button>
+        </div>
+
+        <div id="remoteControlPanel" class="remote-controls" hidden>
+            <div class="remote-row remote-row-main">
+                <button class="rc rc-big rc-primary" data-cmd="play">▶ Start / Stop</button>
+            </div>
+            <div class="remote-row">
+                <button class="rc" data-cmd="back">◀ Back</button>
+                <button class="rc" data-cmd="reset">↺ Reset</button>
+                <button class="rc" data-cmd="forward">Forward ▶</button>
+            </div>
+            <div class="remote-row">
+                <button class="rc" data-cmd="speedDown">− Speed</button>
+                <button class="rc" data-cmd="speedUp">+ Speed</button>
+            </div>
+            <div class="remote-row">
+                <button class="rc" data-cmd="fontDown">− Font</button>
+                <button class="rc" data-cmd="fontUp">+ Font</button>
+            </div>
+            <div class="remote-row">
+                <button class="rc" data-cmd="prevContent">⏮ Prev content</button>
+                <button class="rc" data-cmd="nextContent">Next content ⏭</button>
+            </div>
+            <div class="remote-row">
+                <button class="rc rc-sec" data-cmd="fullscreen">⛶ Fullscreen</button>
+                <button class="rc rc-sec" data-cmd="toggleControls">▲ Panel</button>
+            </div>
+            <div class="remote-row">
+                <button id="remoteDisconnectBtn" class="rc rc-danger">✕ Disconnect</button>
             </div>
         </div>
     </div>

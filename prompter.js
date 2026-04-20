@@ -1106,7 +1106,14 @@ function showWelcome() {
 // Klavye kısayolları — ana ve PiP pencerelerinin ikisinde de çalışır
 function handleKeydown(e) {
     // Prompt modal açıkken hiçbir global kısayol tetiklenmesin
-    if (!promptModalEl.hasAttribute('hidden')) return;
+    if (!promptModalEl.hasAttribute('hidden')) return;    
+    
+    // Remote modal — Esc kapatır, açıkken diğer kısayollar devre dışı
+    const remoteModalEl = document.getElementById('remoteModal');
+    if (remoteModalEl && !remoteModalEl.hasAttribute('hidden')) {
+        if (e.key === 'Escape') { e.preventDefault(); closeRemoteModal(); }
+        return;
+    }
 
     // Help modal — Esc her durumda kapatır
     if (e.key === 'Escape' && !helpModal.hasAttribute('hidden')) {
@@ -1244,8 +1251,8 @@ document.addEventListener('keydown', handleKeydown);
 // Fare tekerleği ile hız ayarı
 function handleWheel(e) {
     if (document.activeElement === inputText || document.activeElement === titleInput) return;
-    // Templates panelinde normal kaydırmayı engelleme
-    if (e.target.closest && e.target.closest('#templatesPanel')) return;
+    // Templates paneli, modallar ve remote uygulamasında normal kaydırmaya izin ver
+    if (e.target.closest && e.target.closest('#templatesPanel, .modal-overlay, #remoteApp, #controls')) return;
     e.preventDefault();
     const delta = e.deltaY < 0 ? 0.1 : -0.1;
     setSpeed(parseFloat(speedInput.value) + delta);
@@ -1262,4 +1269,276 @@ setSpeed(savedPrefs && savedPrefs.speed != null
 setFont(savedPrefs && savedPrefs.fontSize != null
     ? savedPrefs.fontSize
     : parseInt(fontSize.value));
+
+// ========================================================================
+// REMOTE CONTROL (PeerJS / WebRTC)
+// Host (bu sayfa)   -> Peer açar, kısa bir kod üretir, komut bekler.
+// Remote (telefon)  -> URL'de ?remote varsa kontrol paneli görünür,
+//                      kod girilip bağlanıldığında komut gönderir.
+// ========================================================================
+const PEER_ID_PREFIX = 'prompter-';
+const urlRemoteMatch = location.search.match(/(?:^|[?&])remote(?:=([^&]*))?/);
+const urlIsRemote = !!urlRemoteMatch;
+const urlRemoteCode = urlRemoteMatch && urlRemoteMatch[1] ? decodeURIComponent(urlRemoteMatch[1]) : '';
+
+// Komut sözlüğü — remote'tan gelen mesajlar burada eşlenir
+const remoteCommands = {
+    play:           () => togglePlay(),
+    back:           () => step(1),
+    forward:        () => step(-1),
+    reset:          () => resetPosition(),
+    speedUp:        () => { setSpeed(parseFloat(speedInput.value) + 0.2); showStatus('Speed: ' + speedInput.value); },
+    speedDown:      () => { setSpeed(parseFloat(speedInput.value) - 0.2); showStatus('Speed: ' + speedInput.value); },
+    fontUp:         () => { setFont(parseInt(fontSize.value) + 4); showStatus('Font: ' + fontSize.value + 'px'); },
+    fontDown:       () => { setFont(parseInt(fontSize.value) - 4); showStatus('Font: ' + fontSize.value + 'px'); },
+    prevContent:    () => cycleTemplate(-1),
+    nextContent:    () => cycleTemplate(1),
+    fullscreen:     () => toggleFullscreen(),
+    toggleControls: () => toggleControls(),
+    load:           () => loadText(),
+};
+
+// ---- HOST (ana sayfa) ----
+const remoteBtn = document.getElementById('remoteBtn');
+const remoteModal = document.getElementById('remoteModal');
+const remoteCloseBtn = document.getElementById('remoteCloseBtn');
+const remoteDoneBtn = document.getElementById('remoteDoneBtn');
+const remoteRegenBtn = document.getElementById('remoteRegenBtn');
+const remoteOpenBtn = document.getElementById('remoteOpenBtn');
+const remoteStopBtn = document.getElementById('remoteStopBtn');
+const remoteDisconnectRemoteBtn = document.getElementById('remoteDisconnectRemoteBtn');
+const remoteCodeEl = document.getElementById('remoteCode');
+const remoteStatusEl = document.getElementById('remoteStatus');
+const remoteUrlHint = document.getElementById('remoteUrlHint');
+
+let hostPeer = null;
+let hostConn = null;
+let hostCode = null;
+
+function randomCode(len = 6) {
+    const chars = 'abcdefghjkmnpqrstuvwxyz23456789'; // karışması zor harf/rakam
+    let out = '';
+    for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+}
+
+function setRemoteStatus(text, cls = '') {
+    remoteStatusEl.textContent = text;
+    remoteStatusEl.className = 'remote-status' + (cls ? ' ' + cls : '');
+}
+
+function renderRemoteCodeUI() {
+    remoteCodeEl.textContent = hostCode ? hostCode.toUpperCase() : '------';
+    const qrEl = document.getElementById('remoteQr');
+    if (hostCode) {
+        const url = location.origin + location.pathname + '?remote=' + hostCode;
+        remoteUrlHint.innerHTML = 'Remote URL: <a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
+        if (qrEl && typeof qrcode === 'function') {
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(url);
+                qr.make();
+                qrEl.innerHTML = qr.createSvgTag({ scalable: true, margin: 0 });
+                qrEl.title = 'Scan to open: ' + url;
+            } catch (err) {
+                qrEl.innerHTML = '';
+            }
+        }
+    } else {
+        remoteUrlHint.textContent = '';
+        if (qrEl) qrEl.innerHTML = '';
+    }
+}
+
+function startHostPeer() {
+    stopHostPeer();
+    hostCode = randomCode(6);
+    setRemoteStatus('Initializing…');
+    renderRemoteCodeUI();
+    const peerId = PEER_ID_PREFIX + hostCode;
+    hostPeer = new Peer(peerId);
+    hostPeer.on('open', () => {
+        setRemoteStatus('Waiting for remote to connect…');
+        updateRemoteBtnState();
+    });
+    hostPeer.on('connection', (conn) => {
+        if (hostConn) { try { hostConn.close(); } catch (e) {} }
+        hostConn = conn;
+        setRemoteStatus('✓ Remote connected', 'connected');
+        updateRemoteBtnState();
+        conn.on('data', (raw) => {
+            try {
+                const msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                if (msg && msg.cmd && remoteCommands[msg.cmd]) remoteCommands[msg.cmd]();
+            } catch (e) {}
+        });
+        conn.on('close', () => {
+            hostConn = null;
+            if (hostPeer) setRemoteStatus('Waiting for remote to connect…');
+            updateRemoteBtnState();
+        });
+    });
+    hostPeer.on('error', (err) => {
+        if (err && err.type === 'unavailable-id') {
+            startHostPeer(); // kod çakıştıysa yeniden dene
+            return;
+        }
+        setRemoteStatus('Connection error: ' + (err && err.type || err), 'error');
+    });
+}
+
+function stopHostPeer() {
+    try { if (hostConn) hostConn.close(); } catch (e) {}
+    try { if (hostPeer) hostPeer.destroy(); } catch (e) {}
+    hostConn = null;
+    hostPeer = null;
+    hostCode = null;
+    if (remoteCodeEl) remoteCodeEl.textContent = '------';
+    if (remoteUrlHint) remoteUrlHint.textContent = '';
+    const qrEl = document.getElementById('remoteQr');
+    if (qrEl) qrEl.innerHTML = '';
+    setRemoteStatus('Hosting stopped.');
+    updateRemoteBtnState();
+}
+
+function disconnectHostRemote() {
+    if (hostConn) {
+        try { hostConn.close(); } catch (e) {}
+        hostConn = null;
+        setRemoteStatus('Remote disconnected.');
+        updateRemoteBtnState();
+    }
+}
+
+function updateRemoteBtnState() {
+    if (!remoteBtn) return;
+    if (hostConn) {
+        remoteBtn.textContent = '📱 Remote · connected';
+        remoteBtn.classList.add('remote-active');
+    } else if (hostPeer) {
+        remoteBtn.textContent = '📱 Remote · hosting';
+        remoteBtn.classList.add('remote-active');
+    } else {
+        remoteBtn.textContent = '📱 Remote';
+        remoteBtn.classList.remove('remote-active');
+    }
+}
+
+function openRemoteModal() {
+    remoteModal.removeAttribute('hidden');
+    if (!hostPeer) {
+        startHostPeer();
+    } else {
+        // Var olan durumu yansıt
+        renderRemoteCodeUI();
+        setRemoteStatus(hostConn ? '✓ Remote connected' : 'Waiting for remote to connect…',
+                        hostConn ? 'connected' : '');
+    }
+}
+
+// Done / X / backdrop / Esc sadece modalı gizler — peer çalışmaya devam eder
+function closeRemoteModal() {
+    remoteModal.setAttribute('hidden', '');
+}
+
+if (!urlIsRemote) {
+    remoteBtn.addEventListener('click', openRemoteModal);
+    remoteCloseBtn.addEventListener('click', closeRemoteModal);
+    remoteDoneBtn.addEventListener('click', closeRemoteModal);
+    remoteRegenBtn.addEventListener('click', startHostPeer);
+    remoteOpenBtn.addEventListener('click', () => {
+        if (!hostCode) {
+            startHostPeer();
+        }
+        const url = location.origin + location.pathname + '?remote=' + hostCode;
+        window.open(url, '_blank', 'noopener');
+    });
+    remoteStopBtn.addEventListener('click', stopHostPeer);
+    remoteDisconnectRemoteBtn.addEventListener('click', disconnectHostRemote);
+    remoteModal.addEventListener('click', (e) => { if (e.target === remoteModal) closeRemoteModal(); });
+}
+
+// ---- REMOTE (telefon) ----
+if (urlIsRemote) {
+    document.body.classList.add('remote-mode');
+    const remoteApp = document.getElementById('remoteApp');
+    remoteApp.removeAttribute('hidden');
+
+    const remotePairInput = document.getElementById('remotePairInput');
+    const remotePairBtn = document.getElementById('remotePairBtn');
+    const remotePairPanel = document.getElementById('remotePairPanel');
+    const remoteControlPanel = document.getElementById('remoteControlPanel');
+    const remoteAppStatus = document.getElementById('remoteAppStatus');
+    const remoteDisconnectBtn = document.getElementById('remoteDisconnectBtn');
+
+    let remotePeer = null;
+    let remoteConn = null;
+
+    function setRemoteAppStatus(text, cls = 'muted') {
+        remoteAppStatus.textContent = text;
+        remoteAppStatus.className = cls;
+    }
+
+    function pairWithHost() {
+        const code = remotePairInput.value.trim().toLowerCase();
+        if (!code) { remotePairInput.focus(); return; }
+        setRemoteAppStatus('Connecting…');
+        try { if (remotePeer) remotePeer.destroy(); } catch (e) {}
+        remotePeer = new Peer();
+        remotePeer.on('open', () => {
+            const conn = remotePeer.connect(PEER_ID_PREFIX + code, { reliable: true });
+            remoteConn = conn;
+            conn.on('open', () => {
+                setRemoteAppStatus('✓ Connected — code: ' + code.toUpperCase(), 'remote-status connected');
+                remotePairPanel.setAttribute('hidden', '');
+                remoteControlPanel.removeAttribute('hidden');
+            });
+            conn.on('close', () => {
+                setRemoteAppStatus('Disconnected. Enter the code again.', 'remote-status error');
+                remotePairPanel.removeAttribute('hidden');
+                remoteControlPanel.setAttribute('hidden', '');
+            });
+            conn.on('error', (err) => {
+                setRemoteAppStatus('Connection error: ' + (err && err.type || err), 'remote-status error');
+            });
+        });
+        remotePeer.on('error', (err) => {
+            const type = err && err.type || err;
+            if (type === 'peer-unavailable') {
+                setRemoteAppStatus('Code not found — check the prompter screen.', 'remote-status error');
+            } else {
+                setRemoteAppStatus('Error: ' + type, 'remote-status error');
+            }
+        });
+    }
+
+    function sendCmd(cmd) {
+        if (!remoteConn || !remoteConn.open) return;
+        try { remoteConn.send({ cmd }); } catch (e) {}
+        // kısa haptic geribildirim
+        if (navigator.vibrate) navigator.vibrate(15);
+    }
+
+    remotePairBtn.addEventListener('click', pairWithHost);
+    remotePairInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); pairWithHost(); }
+    });
+
+    // ?remote=CODE ile gelindiyse otomatik bağlan
+    if (urlRemoteCode) {
+        remotePairInput.value = urlRemoteCode.toLowerCase();
+        pairWithHost();
+    }
+    remoteControlPanel.querySelectorAll('.rc[data-cmd]').forEach(btn => {
+        btn.addEventListener('click', () => sendCmd(btn.dataset.cmd));
+    });
+    remoteDisconnectBtn.addEventListener('click', () => {
+        try { if (remoteConn) remoteConn.close(); } catch (e) {}
+        try { if (remotePeer) remotePeer.destroy(); } catch (e) {}
+        remotePeer = null; remoteConn = null;
+        remotePairPanel.removeAttribute('hidden');
+        remoteControlPanel.setAttribute('hidden', '');
+        setRemoteAppStatus('Disconnected.', 'muted');
+    });
+}
 updateStats();
